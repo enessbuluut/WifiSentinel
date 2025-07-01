@@ -1,0 +1,128 @@
+🟡 1. ARP Scanner – IPv4 Yerel Ağ Tanımlama Sistemi
+📘 ARP Nedir?
+ARP (Address Resolution Protocol), bir IPv4 adresine karşılık gelen MAC adresini bulmak için kullanılır. IPv4 ağlarında temel iletişim için şarttır.
+
+🔁 Çalışma Mantığı:
+less
+Kopyala
+Düzenle
+Host A: 192.168.1.100
+Host B: 192.168.1.1 (modem)
+
+A → “192.168.1.1 hangi MAC adresinde?”
+B → “Benim MAC’im: aa:bb:cc:dd:ee:ff”
+🔍 Teknik Olarak Neler Olur?
+📤 Aşağıdaki paket gönderilir:
+Layer 2 (Ethernet):
+
+src: Bizim MAC adresimiz
+
+dst: ff:ff:ff:ff:ff:ff (broadcast)
+
+Layer 3 (ARP):
+
+op=1 (ARP Request)
+
+psrc: Bizim IP
+
+pdst: Hedef IP
+
+hwsrc: Bizim MAC
+
+hwdst: 00:00:00:00:00:00
+
+📥 Beklenen cevap:
+op=2 (ARP Reply)
+
+İçinde hedef IP’ye karşılık gelen MAC adresi döner.
+
+🎯 Ne İşe Yarar?
+Yerel ağda (aynı subnet'te) hangi cihazlar bağlıdır?
+
+IP ↔ MAC eşlemesi sağlar.
+
+Basit ve etkili ağ keşfi için kullanılır.
+
+🧠 Avantajları ve Sınırlamaları
+Avantajlar	Sınırlamalar
+Hızlı ve basit	Sadece aynı subnet'teki cihazları görür
+MAC öğrenme garantili	Router'ı geçemez (L2 broadcast sınırı)
+
+
+📡 ARP Scanner Neden Sadece Aynı Subnet'te Çalışır?
+🔷 1. ARP, Layer 2 (Data Link Layer) Protokolüdür
+ARP protokolü, IP adresine karşılık gelen MAC adresini bulur. Ama bu işlem:
+
+Sadece aynı yerel fiziksel ağda (LAN) çalışan cihazlar arasında yapılabilir.
+
+Bu alan broadcast domain olarak adlandırılır.
+
+Yani:
+🔴 ARP, Layer 3 (IP) üzerinden farklı ağlara erişemez.
+
+🔷 2. ARP Broadcast Paketidir
+ARP request şu şekilde gönderilir:
+
+nginx
+Kopyala
+Düzenle
+Ethernet hedef MAC: ff:ff:ff:ff:ff:ff (yani tüm cihazlara gönder)
+→ “192.168.1.1, senin MAC adresin ne?”
+➡️ Bu broadcast sadece aynı fiziksel ağa bağlı cihazlara ulaşır.
+
+Router’lar (ağ geçitleri), bu broadcast’leri geçirmez.
+
+🔷 3. Subnet Ne Demek?
+Örnek IP/Subnet:
+
+makefile
+Kopyala
+Düzenle
+Bilgisayar:   192.168.1.100/24
+Modem:        192.168.1.1
+TV:           192.168.1.150
+Sunucu:       192.168.2.20
+/24 demek: 255.255.255.0 → sadece 192.168.1.X cihazlar aynı subnet'te.
+
+192.168.2.20 başka bir subnet’te → ARP broadcast erişemez.
+
+🔷 4. Router Ne Yapar?
+Bir router şunu yapar:
+
+ARP ile ilgili broadcast’leri asla yönlendirmez.
+
+Kendi üzerindeki bir IP için (örn. 192.168.1.1) ARP reply döner.
+
+Ama farklı subnet’lerdeki cihazlara ARP ulaşmaz.
+
+Yani:
+
+ARP, router’ı geçemez çünkü broadcast paketler Layer 3 router tarafından engellenir.
+
+🧠 Özetle
+Özellik	Açıklama
+Çalışma seviyesi	Layer 2 (Ethernet)
+Hedef	Aynı subnet’teki IP’ler
+Yayın türü	Ethernet broadcast
+Router’ı geçebilir mi?	❌ Hayır
+Diğer subnet’teki cihazlar?	❌ Göremez
+Kullanım alanı	Yerel ağ keşfi, cihaz bulma
+
+🧪 Alternatif: Diğer Subnet’leri Nasıl Taramalı?
+Yöntem	Açıklama
+ICMP Ping	Router’ı geçer, uzaktaki host’u test eder
+TCP SYN Scan	Router üzerinden port taraması yapılabilir
+NDP (IPv6)	Sadece link-local, aynı subnet
+SNMP/DNS scan	Router arkası bilgi çekimi yapılabilir
+
+İstersen bu farkı terminalde de test edebiliriz.
+Örneğin:
+
+nginx
+Kopyala
+Düzenle
+# Aynı subnet'te çalışır
+arp -a 192.168.1.1
+
+# Farklı subnet -> başarısız olur
+arp -a 10.0.0.1

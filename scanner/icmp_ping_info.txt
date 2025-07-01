@@ -1,0 +1,43 @@
+🔵 3. ICMP Ping Sender – Erişilebilirlik Testi
+📘 ICMP Nedir?
+ICMP (Internet Control Message Protocol), hata bildirimi ve test amaçlı kullanılır. Ping komutu da ICMP kullanır.
+
+🔁 Ping Ne Yapar?
+css
+Kopyala
+Düzenle
+Host A → ICMP Echo Request → Host B
+Host B → ICMP Echo Reply → Host A
+Bu şekilde, bir IP adresine erişim olup olmadığı test edilir.
+
+🧱 Teknik Paket Yapısı
+📤 Echo Request:
+IP header:
+
+src: bizim IP
+
+dst: hedef IP
+
+ICMP header:
+
+type=8, code=0 (Echo Request)
+
+id, seq: tanımlayıcılar
+
+Payload: (örn: "abcdefghijklmnop")
+
+📥 Echo Reply:
+type=0, code=0 (Echo Reply)
+
+🎯 Ne İşe Yarar?
+Hedef cihaz ayakta mı?
+
+Latency (gecikme süresi) ölçümü
+
+Ağ bağlantısı sorunlarını teşhis etme
+
+🧠 Avantajlar & Kısıtlamalar
+Avantajlar	Sınırlamalar
+Basit ve etkili test	ICMP engellenmiş olabilir (firewall)
+Tüm OS'lerce desteklenir	Bazı sistemlerde ICMP root erişimi ister
+Hem IPv4 hem IPv6 çalışır	Port bilgisi vermez (sadece host alive)

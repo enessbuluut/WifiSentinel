@@ -1,0 +1,86 @@
+📡 TCP SYN Scan Derin Teknik Anlatımı
+🔁 1. TCP Nedir?
+TCP (Transmission Control Protocol), verileri güvenli ve sıralı şekilde iletmek için kullanılan bir protokoldür. Verici ve alıcı arasında bir bağlantı (connection) kurulmadan veri gönderilmez.
+
+Bu bağlantı, TCP’nin 3 yönlü el sıkışması (3-way handshake) denen bir mekanizma ile kurulur:
+
+✅ Normal TCP El Sıkışması:
+rust
+Kopyala
+Düzenle
+A ---> SYN  ---> B   → "Bağlantı kurmak istiyorum"
+A <--- SYN-ACK <--- B   → "Tamam, hazırım"
+A ---> ACK  ---> B   → "Başlıyoruz"
+🔍 2. TCP SYN Scan Ne Yapıyor?
+Biz bu üç adımdan sadece ilkini (SYN) gönderiyoruz. Yani "Merhaba, bağlantı kurmak istiyorum" diyoruz ama devam etmiyoruz.
+
+❗ Neden?
+Çünkü cevaba bakarak portun durumunu anlayabiliriz:
+
+Gelen Yanıt	Ne Anlama Gelir?	Port Durumu
+SYN-ACK	Bağlantı kurulabilir	✅ Open
+RST (Reset)	Bağlantı istenmiyor	❌ Closed
+Hiçbir cevap	Firewall/filtre var	🔒 Filtered
+
+🛠️ 3. SYN Scan Paket Yapısı (OSI Katmanlarına Göre)
+SYN Scan gönderdiğimizde şu katmanlar devrededir:
+
+arduino
+Kopyala
+Düzenle
+Layer 2 (Ethernet): MAC adresleri
+Layer 3 (IP): Kaynak IP → Hedef IP
+Layer 4 (TCP): TCP header → flags=SYN
+Bu paketin içeriği şöyle olur:
+
+TCP Flag: SYN (connection başlatma sinyali)
+
+Port: Hedef port (örn. 22, 80, 443...)
+
+Seq numarası: Rastgele başlangıç
+
+Src Port: Rastgele (genelde >1024)
+
+👀 4. Cevabı Nasıl Okuruz?
+Hedef cihazdan gelen cevabı analiz ederiz:
+
+SYN-ACK → Port açık, çünkü bağlantıyı kabul ediyor.
+
+RST → Port kapalı, çünkü “böyle bir şey istemiyorum” diyor.
+
+Hiçbir cevap yok → Muhtemelen firewall araya girdi, paketi engelledi.
+
+🕵️‍♂️ 5. Neden “Stealth” Tarama?
+Biz 3. adım olan ACK’i göndermiyoruz, bu yüzden:
+
+Bağlantı kurulmamış sayılır (TCP state tablosuna yazılmaz).
+
+Bazı güvenlik sistemleri bunu fark edemez.
+
+"Yarı-açık" tarama (Half-open scan) da denir.
+
+📊 6. Ne Zaman Kullanılır?
+Güvenlik testleri (pentest)
+
+Servis tespiti (ör. hangi servis hangi portta)
+
+Ağ keşfi
+
+Firewall davranışı analizi
+
+💣 7. Avantajları vs Dezavantajları
+Avantajlar	Dezavantajlar
+Hızlıdır	Bazı gelişmiş IDS'ler fark eder
+Düşük iz bırakır	SYN flood korumasına takılabilir
+Bağlantı kurmaz	Raw socket gerektirir (yetki şart)
+
+🎯 Özetle:
+TCP SYN Scan şunu yapar:
+
+“Ben senin belirli bir portuna sadece hafifçe kapıyı çalıyorum. Eğer bana 'gel buyur' (SYN-ACK) dersen, oranın açık olduğunu anlarım. Ama içeri girmem.”
+
+Eğer bu anlatım şimdi daha anlamlı geldiyse, istersen bir görselle de destekleyebilirim. Sonrasında birlikte kodlamaya geçebiliriz:
+
+Temel versiyon: scapy ile bir IP’ye tek port taraması.
+
+Gelişmiş versiyon: Çoklu portları ve IP’leri thread’li yapıyla tarayan sistem.

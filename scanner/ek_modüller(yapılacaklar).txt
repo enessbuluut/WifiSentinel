@@ -1,0 +1,245 @@
+1) UDP Scanner — Detaylı Teknik Anlatım
+Amaç
+UDP (User Datagram Protocol) temelli hizmetlerin ve açık portların keşfi. Örneğin DNS (53), DHCP (67/68), SNMP (161) gibi protokoller UDP kullanır. TCP gibi bağlantı tabanlı olmadığından, UDP port taraması TCP’den daha karmaşıktır.
+
+Teknik Zorluklar
+Bağlantısızlık: UDP paketleri "fire-and-forget" yapısıdadır. Paket gönderilir, yanıt alınıp alınmayacağı garantisi yoktur.
+
+Yanıtsızlık: Birçok UDP servisi yanıt vermez.
+
+ICMP Mesajları: Bir UDP portu kapalıysa hedef sistem “ICMP Port Unreachable” mesajı gönderebilir.
+
+Firewall ve Filtreler: Paketler firewall tarafından düşürülebilir ve yanıtsızlık artar.
+
+Yöntem
+UDP Paketi Gönderme:
+Hedef IP ve port numarasına UDP boş veya belirli formatta bir paket (örneğin DNS sorgusu) gönderilir.
+
+Yanıt Bekleme:
+
+Eğer UDP servis varsa, çoğunlukla yanıt paketi gelir.
+
+Kapalı portlarda genellikle ICMP Port Unreachable mesajı gelir.
+
+Eğer hiç yanıt yoksa (ne UDP yanıtı ne ICMP mesajı) port “filtered” ya da “open|filtered” olarak değerlendirilir.
+
+Zamanlama:
+Zaman aşımı süresi önemlidir. Kısa tutulursa doğruluk düşer, uzun tutulursa tarama yavaşlar.
+
+Uygulamada
+scapy kütüphanesi ile UDP paketleri oluşturulur (UDP(dport=port)), gönderilir (sr1() veya sr() ile) ve yanıt dinlenir.
+
+ICMP mesajlarını yakalamak için paket sniffing yapılabilir.
+
+Çok sayıda port varsa, paralel tarama (threading veya asyncio) gerekir.
+
+2) Banner Grabbing — Detaylı Teknik Anlatım
+Amaç
+Açık portlarda çalışan servislerin türünü, sürümünü ve konfigürasyon bilgisini tespit etmek. Örneğin HTTP sunucu türü, FTP yazılım versiyonu, SMTP sunucu bilgisi.
+
+Teknik Prensipler
+TCP bağlantısı açılır (three-way handshake sonrası).
+
+Protokole özel veya genel "probe" mesajları gönderilir.
+
+Gelen yanıt paketleri parse edilir ve banner (karşılama metni, sürüm, yazılım adı) çıkarılır.
+
+Bu bilgi açık kaynak veri tabanlarıyla eşleştirilip zafiyet analizi için kullanılır.
+
+Örnek Protokoller ve Mesajlar
+HTTP: HEAD / HTTP/1.0\r\n\r\n
+
+FTP: USER anonymous\r\n veya sadece bağlantı açmak yeterli olabilir.
+
+SMTP: EHLO example.com\r\n
+
+SSH: Bağlantı kurulduğunda sunucu sürüm bilgisi genelde ilk pakette gelir.
+
+Uygulama
+socket modülü ile TCP bağlantısı kurulur.
+
+Protokole göre mesaj gönderilir ve yanıt okunur.
+
+Yanıttan regex veya string parse ile sürüm bilgisi çıkarılır.
+
+Timeout ve hata kontrolü yapılır.
+
+Dikkat Edilmesi Gerekenler
+Banner bilgisi bazen kapatılmış veya değiştirilmiş olabilir (güvenlik sebebiyle).
+
+Yavaş yanıt veren servislerde timeout ayarı önemli.
+
+Çok sayıda port ve serviste uygulanması zaman alır, paralelleştirme faydalı.
+
+3) ICMP Flood — Detaylı Teknik Anlatım
+Amaç
+Hedef sistem veya ağ cihazına yüksek hacimde ICMP Echo Request (ping) paketi göndererek cevap kapasitesi, ağ bant genişliği ve sistem stabilitesini test etmek; bazen DoS testi.
+
+Teknik Detaylar
+ICMP Echo Request/Reply: Ping protokolünün temelidir.
+
+Flooding: Çok sayıda ICMP Echo Request ard arda gönderilir (örneğin saniyede yüzlerce- binlerce).
+
+Gecikme (Latency) ve Paket Kaybı: Ölçülür ve analiz edilir.
+
+Yasal Kısıtlamalar: Gerçek ortamlarda flood saldırıları yasal değildir, laboratuvar ortamında yapılmalı.
+
+Firewall: Firewall veya IDS sistemleri ICMP flood’u engelleyebilir.
+
+Uygulama
+scapy ile ICMP() paketi oluşturulur ve döngü içinde hızlıca gönderilir.
+
+Yanıtlar sayılır, yanıt süresi ölçülür (round-trip time).
+
+Performans için paket gönderme hızı ayarlanabilir.
+
+4) Anomali Tespiti — Detaylı Teknik Anlatım
+Amaç
+Ağda gerçekleşen olağan dışı durumları (yetkisiz cihaz, beklenmeyen port açılması, MAC adresi değişikliği vb.) tespit etmek.
+
+Teknik Yöntemler
+Temel Veri: Düzenli aralıklarla ağ taraması yapılarak cihaz ve port bilgileri toplanır.
+
+Değişim Takibi: Önceki tarama sonuçları ile yeni sonuçlar karşılaştırılır.
+
+Anormal Durumlar:
+
+Yeni cihazlar (yeni MAC veya IP adresi)
+
+Beklenmeyen açık portlar
+
+MAC adresi değişikliği (örneğin MAC spoofing)
+
+IP çakışmaları veya değişiklikleri
+
+Alarm Mekanizması: Anomaliler loglanır veya kullanıcıya bildirilir.
+
+Algoritmalar ve Veri Yapıları
+Cihaz listeleri dict veya JSON olarak saklanır.
+
+Set farkları (set veri yapısı) ile yeni/çıkan cihazlar hızlı tespit edilir.
+
+Zaman damgası (timestamp) ile değişim sıklığı izlenir.
+
+Uygulama
+WiFiSentinel içinde düzenli taramalar yapılır, sonuçlar dosyaya veya veritabanına kaydedilir.
+
+Her taramada eski kayıtlarla karşılaştırma yapılır.
+
+Anomaliler kullanıcıya raporlanır veya gerçek zamanlı alarm üretilir.
+
+5) MAC Adresi Üretici / Vendor Tespiti — Detaylı Teknik Anlatım
+Amaç
+Ağdaki cihazların MAC adreslerinden üretici firma bilgisini tespit etmek, böylece cihazların markası veya türü hakkında bilgi sahibi olmak.
+
+Teknik Detaylar
+MAC adresi 48 bit (6 oktet) uzunluğundadır.
+
+İlk 3 oktet (24 bit) OUI (Organizationally Unique Identifier) olarak adlandırılır ve üreticiyi temsil eder.
+
+IEEE tarafından OUI kayıtları düzenlenir ve yayımlanır.
+
+OUI veritabanı (genellikle CSV veya JSON formatında) güncel tutulmalıdır.
+
+Yöntem
+MAC adresinden ilk 3 oktet (örneğin 00:1A:2B) çıkarılır.
+
+Veritabanından bu OUI aranır.
+
+Eşleşen üretici adı kullanıcıya gösterilir.
+
+Uygulama
+İnternetten güncel OUI verisi indirilir veya API kullanılır.
+
+Programda OUI lookup fonksiyonu yazılır.
+
+Taramada bulunan MAC adreslerine bu fonksiyon uygulanır.
+
+Üretici bilgisi açık portlarla birlikte raporlanabilir.
+
+6) Neighbor Discovery (IPv6 ND) — Detaylı Teknik Anlatım
+Amaç
+IPv6 ağlarda komşu cihazları bulmak için Neighbor Discovery protokolünü kullanmak. IPv4’de ARP’nin IPv6’daki muadili.
+
+Teknik
+IPv6 ND paketleri ICMPv6 protokolü içinde tanımlıdır.
+
+Neighbor Solicitation (NS) paketi gönderilir; hedef cihaz Neighbor Advertisement (NA) ile yanıt verir.
+
+Solicited-node multicast adreslerine gönderilir, böylece cihazlar cevap verir.
+
+Link-local adres kullanımı yaygındır.
+
+Güvenlik: ND spoofing saldırılarına karşı dikkat.
+
+Uygulama
+scapy kullanılarak ICMPv6 Neighbor Solicitation paketleri hazırlanır ve gönderilir.
+
+Gelen NA yanıtları dinlenir.
+
+Yanıtlardan MAC ve IPv6 adresleri çıkarılır.
+
+Elde edilen cihaz listesi gösterilir veya loglanır.
+
+7) Socket Tabanlı Probing (Aktif Bağlantı Kontrolü)
+Amaç
+Tarama yapılacak portlara gerçek TCP bağlantısı açarak (connect()) portun durumu kesin olarak test edilir.
+
+Teknik
+TCP üç aşamalı el sıkışma (SYN, SYN-ACK, ACK) tamamlanırsa port açıktır.
+
+RST alınırsa port kapalıdır.
+
+Zaman aşımı varsa port filtrelenmiş olabilir.
+
+Bu yöntem SYN taramaya göre daha “gürültülü”dür çünkü tam bağlantı kurulur.
+
+Uygulama
+Python socket modülü ile hedef IP ve porta bağlantı denemesi yapılır.
+
+Bağlantı başarılı olursa port açık kabul edilir.
+
+Bağlantı reddedilirse kapalı.
+
+Timeout’lar filtrelenmiş anlamına gelir.
+
+Paralel iş parçacığı ile hız artırılır.
+
+8) Paket Dinleme (Sniffing)
+Amaç
+Ağ arayüzünden geçen paketlerin gerçek zamanlı olarak yakalanması, analiz edilmesi ve loglanması.
+
+Teknik
+Pasif dinleme yapılır, ağda herhangi aktif tarama veya paket gönderilmez.
+
+scapy, pyshark, pcapy gibi kütüphaneler kullanılır.
+
+Filtreleme yapılabilir (örneğin sadece TCP SYN paketleri, ARP paketleri vb).
+
+Anormal paketler, şüpheli trafik tespit edilebilir.
+
+Uygulama
+Program belirli arayüzde promiscuous mode ile dinlemeye başlar.
+
+Paket bazında parse edilir.
+
+Belirlenen kriterlere göre alarm veya kayıt tutar.
+
+9) Blacklist Check (Kara Liste Kontrolü)
+Amaç
+Ağdaki cihazların IP veya MAC adreslerinin bilinen zararlı ya da şüpheli listelerde olup olmadığını kontrol etmek.
+
+Teknik
+Kamuya açık veya kurum içi blacklist veri tabanları kullanılır.
+
+IP ve MAC adresleri API veya lokal veritabanları ile karşılaştırılır.
+
+Eşleşme varsa uyarı üretilir.
+
+Uygulama
+IP veya MAC listesi alınır.
+
+Her cihaz sorgulanır.
+
+Sonuç raporlanır.
+

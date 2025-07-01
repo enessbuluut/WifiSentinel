@@ -1,0 +1,57 @@
+📘 ND (Neighbor Discovery) Nedir?
+IPv6’da ARP yoktur. Onun yerine Neighbor Discovery Protocol (NDP) vardır. ND, ICMPv6 protokolü içinde yer alır.
+
+🔁 Çalışma Mantığı (IPv6 El Sıkışması)
+less
+Kopyala
+Düzenle
+A (fe80::1) → Neighbor Solicitation (NS)
+    → “fe80::2’nin MAC adresi nedir?”
+
+B (fe80::2) → Neighbor Advertisement (NA)
+    → “Benim MAC adresim 12:34:56:78:9a:bc”
+🧱 Paket Yapısı
+📤 Gönderilen:
+Ethernet (Layer 2):
+
+src: bizim MAC
+
+dst: hedefin multicast MAC (33:33:ff:XX:XX:XX)
+
+IPv6 (Layer 3):
+
+src: bizim link-local IP
+
+dst: hedefin solicited-node multicast IP (ff02::1:ffXX:XXXX)
+
+ICMPv6 (Layer 4):
+
+Type=135 (Neighbor Solicitation)
+
+Option: Source Link-Layer Address (bizim MAC)
+
+📥 Gelen:
+Type=136 (Neighbor Advertisement)
+
+İçinde hedef IP’nin MAC’i vardır.
+
+💡 Solicited-Node Multicast Nedir?
+IPv6 cihazı multicast üzerinden dinleme yapar. Örneğin:
+
+ruby
+Kopyala
+Düzenle
+Hedef IP: fe80::abcd:1234:5678:9abc
+→ Solicited-Node: ff02::1:ff78:9abc
+→ MAC: 33:33:ff:78:9a:bc
+🎯 Ne İşe Yarar?
+IPv6 ağlarında cihaz keşfi
+
+MAC ↔ IPv6 eşleşmesi
+
+Modern ağlarda (özellikle router’larda) kullanılır
+
+🧠 Avantajlar & Sınırlamalar
+Avantajlar	Sınırlamalar
+IPv6 destekli tüm cihazlarla çalışır	Sadece link-local iletişim (fe80::/10)
+Daha güvenli yapı (ICMPv6)	Complex multicast hesaplaması gerekebilir
